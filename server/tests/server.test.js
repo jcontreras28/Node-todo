@@ -10,7 +10,9 @@ const todos = [{
     text: 'First test todo'
 }, {
     _id: new ObjectID(),
-    text: 'Second test todo'
+    text: 'Second test todo',
+    completed: 'true',
+    completedAt: 333
 }];
 
 beforeEach((done) => {
@@ -101,6 +103,65 @@ describe('GET /todos/:id', () => {
     });
 });
 
+describe('PATCH /todos/:id', () => {
+    it('should update todo doc to completed and ad completedAt time', (done) => {
+        var hexId = todos[0]._id.toHexString();
+
+        var text = "Test case update";
+
+        request(app)
+            .patch(`/todos/${hexId}`)
+            .send({
+                completed: true,
+                text
+            })
+            .expect(200)
+            .expect((res) => {
+                expect(res.body.todo.text).toBe(text);
+            })
+            .expect((res) => {
+                expect(res.body.todo.completed).toBe(true);
+            })
+            .expect((res) => {
+                expect(res.body.todo.completedAt).toBeA('number');
+            })
+            .end(done);
+    });
+
+    it('should update todo doc to not completed and clear completedAt time', (done) => {
+        var hexId = todos[1]._id.toHexString();
+
+        request(app)
+            .patch(`/todos/${hexId}`)
+            .send({
+                completed: false
+            })
+            .expect(200)
+            .expect((res) => {
+                expect(res.body.todo.completed).toBe(false);
+            })
+            .expect((res) => {
+                expect(res.body.todo.completedAt).toNotExist(null);
+            })
+            .end(done);
+    });
+
+    it('should return 404 if todo not found', (done) => {
+        var newId = ObjectID();
+        request(app)
+            .patch(`/todos/${newId.toHexString()}`)
+            .expect(404)
+            .end(done);
+    });
+
+    it('should return 404 if todo id not valid', (done) => {
+        request(app)
+            .patch(`/todos/1234`)
+            .expect(404)
+            .end(done);
+    });
+});
+
 describe('DELETE /todos/:id', () => {
     it('should delete todo doc', (done) => {
         var hexId = todos[1]._id.toHexString();
@@ -137,3 +198,4 @@ describe('DELETE /todos/:id', () => {
             .end(done);
     });
 });
+
